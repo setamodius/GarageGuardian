@@ -31,6 +31,72 @@ The project was created with a simple goal:
 - Buzzer
 - 12V power supply
 
+## Diagram
+```text
+                    +12V Power Supply
+                          │
+          ┌───────────────┴────────────────┐
+          │                                │
+          ▼                                ▼
+   ┌─────────────┐                 ┌─────────────────┐
+   │   LM2596    │                 │ Electric Strike │
+   │  12V → 5V   │                 │      Lock       │
+   └──────┬──────┘                 └────────┬────────┘
+          │                                 │
+          │ 5V                              │
+          ▼                                 │
+      ┌────────┐                            │
+      │ ESP32  │                            │
+      │        │                            │
+      │ GPIO26 ├───────────────┐            │
+      │ GPIO25 ├──[220Ω]──|>|──┴── GND      │
+      │ GPIO33 ├────────────── Buzzer       │
+      └───┬────┘                            │
+          │                                 │
+          │ GND                             │
+          ▼                                 │
+         GND                                │
+                                           │
+                                        Drain
+                                      ┌────────┐
+                                      │        │
+                         GPIO26 ─────│ Gate   │
+                                      │ MOSFET │
+                                      │ Source │
+                                      └───┬────┘
+                                          │
+                                          ▼
+                                         GND
+```
+
+### Flyback Diode
+
+```text
+              +12V
+                │
+                ├───────────────┐
+                │               │
+                │          Cathode
+                │             │
+                │          ┌──┴──┐
+                │          │Diode│
+                │          └──┬──┘
+                │             │
+                │           Anode
+                │             │
+        ┌───────┴───────┐     │
+        │ Electric      │     │
+        │ Strike Lock   │     │
+        └───────┬───────┘     │
+                │             │
+                └─────────────┘
+                │
+              Drain
+             MOSFET
+```
+
+> All grounds must be connected together: ESP32 GND, LM2596 GND and 12V power supply GND.
+
 ## Project Status
 
 Working prototype completed.
