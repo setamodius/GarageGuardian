@@ -11,14 +11,41 @@ The project was created with a simple goal:
 ## Features
 
 - ESP32 based
-- BLE iTAG support
-- Multiple authorized devices
+- BLE iTAG support (up to 5 beacons)
+- RSSI-based proximity auto-open
+- Button press detection via BLE notifications
 - Electric strike control
 - Automatic BLE reconnection
-- Audible status notifications
-- Visual status indication
-- Offline operation (no Wi-Fi required)
-- Open source
+- Watchdog timer (60s) for stability
+- Audible status notifications (passive buzzer)
+- Visual status indication (LED)
+- WiFi AP mode for web-based beacon management
+- NVS persistent beacon storage
+- Serial command interface
+
+## Web Interface
+
+The ESP32 starts a WiFi access point on boot:
+
+- **SSID:** `GarageDoor`
+- **Password:** `garage123`
+- **URL:** `http://192.168.4.1`
+
+The web interface allows you to:
+
+- View beacon and BLE connection status
+- Add or remove authorized beacons
+- Scan nearby BLE devices and add them directly
+
+## Serial Commands
+
+Connect via serial at 115200 baud:
+
+| Command | Description |
+|---------|-------------|
+| `LIST` | List all stored beacons |
+| `ADD xx:xx:xx:xx:xx:xx` | Add a beacon by MAC address |
+| `REMOVE xx:xx:xx:xx:xx:xx` | Remove a beacon by MAC address |
 
 ## Hardware
 
@@ -26,12 +53,13 @@ The project was created with a simple goal:
 - BLE iTAG
 - Electric strike
 - N-Channel MOSFET
-- LM2596 DC-DC converter
+- LM2596 DC-DC converter (12V → 5V)
 - Status LED
-- Buzzer
+- Passive buzzer
 - 12V power supply
 
-## Diagram
+## Wiring
+
 ```text
                     +12V Power Supply
                           │
@@ -48,54 +76,52 @@ The project was created with a simple goal:
       ┌────────┐                            │
       │ ESP32  │                            │
       │        │                            │
-      │ GPIO26 ├───────────────┐            │
-      │ GPIO25 ├──[220Ω]──|>|──┴── GND      │
-      │ GPIO33 ├────────────── Buzzer       │
+      │ GPIO26 ├───────────────────────── Gate (MOSFET)
+      │ GPIO25 ├──[220Ω]──|>|──── GND      │
+      │ GPIO33 ├─────────────────── Buzzer │
       └───┬────┘                            │
           │                                 │
           │ GND                             │
-          ▼                                 │
-         GND                                │
-                                           │
-                                        Drain
-                                      ┌────────┐
-                                      │        │
-                         GPIO26 ─────│ Gate   │
-                                      │ MOSFET │
-                                      │ Source │
-                                      └───┬────┘
-                                          │
-                                          ▼
-                                         GND
+          ▼                               Drain
+         GND                            ┌────────┐
+                                        │ MOSFET │
+                              Strike ───┤ Drain  │
+                              GPIO26 ───┤ Gate   │
+                                 GND ───┤ Source │
+                                        └────────┘
 ```
 
+### GPIO Pinout
+
+| Pin | Function |
+|-----|----------|
+| GPIO26 | MOSFET Gate (relay) |
+| GPIO25 | Status LED (via 220Ω) |
+| GPIO33 | Passive buzzer |
+
 ### Flyback Diode
+
+Place a flyback diode across the electric strike coil to suppress voltage spikes:
 
 ```text
               +12V
                 │
                 ├───────────────┐
                 │               │
-                │          Cathode
-                │             │
-                │          ┌──┴──┐
-                │          │Diode│
-                │          └──┬──┘
-                │             │
+                │          Cathode (Diode)
+                │               │
                 │           Anode
-                │             │
-        ┌───────┴───────┐     │
-        │ Electric      │     │
-        │ Strike Lock   │     │
-        └───────┬───────┘     │
-                │             │
-                └─────────────┘
+                │               │
+        ┌───────┴───────┐       │
+        │ Electric      │       │
+        │ Strike Lock   │       │
+        └───────┬───────┘       │
+                └───────────────┘
                 │
-              Drain
-             MOSFET
+              Drain (MOSFET)
 ```
 
-> All grounds must be connected together: ESP32 GND, LM2596 GND and 12V power supply GND.
+> All grounds must be connected together: ESP32 GND, LM2596 GND, and 12V power supply GND.
 
 ## Project Status
 
